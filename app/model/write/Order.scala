@@ -26,7 +26,7 @@ case class EmptyOrder(number: OrderNumber) extends Order {
     * - add a first item
     * - cancel order
     */
-  def possibleActions(stockService: StockService) = 
+  def possibleActions(stockService: StockService) =
     addFirstItem(stockService) ++ cancel
 
   def addFirstItem(stockService: StockService) =
@@ -162,8 +162,9 @@ case class NonEmptyOrder(number: OrderNumber, items: List[Item] = List.empty) ex
 }
 
 case class PayedOrder(number: OrderNumber) extends Order {
+
   /** end-of-life, must reject all commands */
-  def rejectAllCommands = 
+  def rejectAllCommands =
     // format: off
     actions[Order]
       .rejectCommand {
@@ -173,8 +174,9 @@ case class PayedOrder(number: OrderNumber) extends Order {
 }
 
 case class CancelledOrder(number: OrderNumber) extends Order {
+
   /** end-of-life, must reject all commands */
-  def rejectAllCommands = 
+  def rejectAllCommands =
     // format: off
     actions[Order]
         .rejectCommand {
@@ -190,25 +192,35 @@ object Order {
   import OrderProtocol._
 
   /** factory actions to bootstrap aggregate */
-  def factoryActions(number: OrderNumber) =
+  def factoryActions(number: OrderNumber, stockService: StockService) =
     // format: off
     actions[Order]
       .handleCommand {
         cmd: CreateOrder.type => OrderWasCreated(number)
       }
+      .handleCommand {
+        cmd: AddItem => 
+          stockService.reserveItem(cmd.itemId).map { _ =>
+            List(
+              OrderWasCreated(number),
+              ItemWasAdded(number, cmd.itemId, cmd.name, cmd.price)
+            )
+          }
+          
+      }
       .handleEvent {
         evt: OrderWasCreated => EmptyOrder(evt.number)
       }
     // format: on
-    
+
   def behavior(number: OrderNumber, stockService: StockService, billingService: BillingService): Behavior[Order] = {
 
     Behavior {
       // the initial behavior that triggers the creation of an order
-      factoryActions(number)
+      factoryActions(number, stockService)
     } {
-      case order: EmptyOrder      => order.possibleActions(stockService)
-      case order: NonEmptyOrder   => order.possibleActions(stockService, billingService)
+      case order: EmptyOrder    => order.possibleActions(stockService)
+      case order: NonEmptyOrder => order.possibleActions(stockService, billingService)
 
       // game over, no more commands
       case payed: PayedOrder         => payed.rejectAllCommands
