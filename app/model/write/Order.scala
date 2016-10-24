@@ -26,7 +26,35 @@ case class EmptyOrder(number: OrderNumber) extends Order {
     * - add a first item
     * - cancel order
     */
-  def possibleActions(stockService: StockService) = Actions.empty[Order]
+  def possibleActions(stockService: StockService) = 
+    addFirstItem(stockService) ++ cancel
+
+  def addFirstItem(stockService: StockService) =
+    // format: off
+    actions[Order]
+      .handleCommand {
+        cmd: AddItem =>
+          stockService.reserveItem(cmd.itemId).map { _ =>
+            ItemWasAdded(number, cmd.itemId, cmd.name, cmd.price)
+          }
+      }
+      .handleEvent { evt: ItemWasAdded =>
+        val item = Item(evt.itemId, evt.name, evt.price)
+        NonEmptyOrder(number, List(item))
+      }
+    // format: on
+
+  def cancel =
+    // format: off
+    actions[Order]
+      .handleCommand {
+        // notice that an EmptyOrder doesn't have to cancel any reservation
+        cmd: CancelOrder.type => OrderWasCancelled(number)
+      }
+      .handleEvent {
+        evt: OrderWasCancelled => CancelledOrder(number)
+      }
+  // format: on
 
 }
 
@@ -66,7 +94,16 @@ object Order {
   import OrderProtocol._
 
   /** factory actions to bootstrap aggregate */
-  def factoryActions(number: OrderNumber) = Actions.empty[Order]
+  def factoryActions(number: OrderNumber) =
+    // format: off
+    actions[Order]
+      .handleCommand {
+        cmd: CreateOrder.type => OrderWasCreated(number)
+      }
+      .handleEvent {
+        evt: OrderWasCreated => EmptyOrder(evt.number)
+      }
+    // format: on
     
   def behavior(number: OrderNumber, stockService: StockService, billingService: BillingService): Behavior[Order] = {
 
