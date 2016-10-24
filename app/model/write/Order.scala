@@ -74,7 +74,91 @@ case class NonEmptyOrder(number: OrderNumber, items: List[Item] = List.empty) ex
     * - cancel order
     */
   def possibleActions(stockService: StockService, billingService: BillingService) =
-    Actions.empty[Order]
+    addItems(stockService) ++
+      removeItems ++
+      pay(stockService, billingService) ++
+      cancel
+
+  /**
+    * Command and Event handlers for adding an item to the [[Order]].
+    * Depends on [[StockService]] to reserve Item on stock
+    */
+  def addItems(stockService: StockService) =
+    // format: off
+    actions[Order]
+      .handleCommand {
+        cmd: AddItem =>
+          // AddItem requires a 'remote' call and returns a Future
+          stockService.reserveItem(cmd.itemId).map { _ =>
+            ItemWasAdded(number, cmd.itemId, cmd.name,  cmd.price)
+          }
+      }
+      .handleEvent {
+        evt: ItemWasAdded =>
+          val item = Item(evt.itemId, evt.name, evt.price)
+          copy(items = item :: items)
+      }
+    // format: on
+
+  /**
+    * Command and Event handlers for removing an item from the [[Order]].
+    */
+  def removeItems =
+    // format: off
+    actions[Order]
+      .handleCommand {
+        cmd: RemoveItem =>
+          // TODO: what about the item reservation?
+          // if there is an item for this code, emit event
+          // otherwise do nothing
+          items.find(_.itemId == cmd.itemId).map { _ =>
+            ItemWasRemoved(number, cmd.itemId)
+          }
+      }
+      .handleEvent {
+        evt: ItemWasRemoved =>
+          val updatedItems = Lists.removeFirst(items)(_.itemId == evt.itemId)
+
+          // is order empty now? go back to start
+          if(updatedItems.isEmpty) EmptyOrder(number)
+          else copy(items = updatedItems)
+          
+      }
+    // format: on
+
+  /**
+    * Command and Event handlers for removing an item from the [[Order]].
+    */
+  def cancel =
+    // format: off
+    actions[Order]
+        .handleCommand {
+          // TODO: what about the reservations?
+          cmd: CancelOrder.type => OrderWasCancelled(number)
+        }
+        .handleEvent {
+          evt: OrderWasCancelled => CancelledOrder(number)
+        }
+    // format: on
+
+  /**
+    * Command and Event handlers for paying the [[Order]].
+    */
+  def pay(reservationService: StockService, billingService: BillingService) =
+    // format: off
+    actions[Order]
+      .handleCommand {
+        cmd: PayOrder =>
+          billingService
+            .makePayment(cmd.accountNumber, number.value, totalAmount)
+            .map { _ =>
+              OrderWasPayed(number, cmd.accountNumber)
+            }
+      }
+      .handleEvent {
+        evt: OrderWasPayed => PayedOrder(number)
+      }
+    // format: on
 }
 
 case class PayedOrder(number: OrderNumber) extends Order {
