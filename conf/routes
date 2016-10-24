@@ -1,0 +1,25 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ORDERS Bounded Context
+
+# Command side controllers
+PUT     /order                                      controllers.orders.OrderCommandController.createOrder
+POST    /order/:number/items                        controllers.orders.OrderCommandController.addItem(number)
+DELETE  /order/:number/items/:itemId                controllers.orders.OrderCommandController.removeItem(number, itemId)
+DELETE  /order/:number                              controllers.orders.OrderCommandController.cancel(number)
+POST    /order/:number                              controllers.orders.OrderCommandController.pay(number)
+
+# Query side controllers
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+GET     /order/:number                              controllers.orders.OrderQueryController.view(number)
+GET     /orders/open                                controllers.orders.OrderQueryController.allOpen()
+GET     /orders/payed                               controllers.orders.OrderQueryController.allPayed()
+GET     /orders/cancelled                           controllers.orders.OrderQueryController.allCancelled()
+
+
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

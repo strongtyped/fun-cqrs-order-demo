@@ -1,0 +1,20 @@
+Step 0:
+  Implement 'factory actions' and 'EmptyOrder' behavior
+    - interaction with stock service
+
+Step 1:
+  `NonEmptyOrder` behavior
+    - interaction with stock service and billing
+
+Step 2:
+  `PayedOrder` and `CancelledOrder` behavior
+    - guards
+
+Step 3:
+  View Projection - OrderDetails
+
+
+Step 4: 
+  Extra 
+    How to initialize an Order using the `AddItem` command?
+    Can we emitt a list of Events List(OrderWasCreated, ItemWasAdded) in the 'factory actions'?
