@@ -163,12 +163,24 @@ case class NonEmptyOrder(number: OrderNumber, items: List[Item] = List.empty) ex
 
 case class PayedOrder(number: OrderNumber) extends Order {
   /** end-of-life, must reject all commands */
-  def rejectAllCommands = Actions.empty[Order]
+  def rejectAllCommands = 
+    // format: off
+    actions[Order]
+      .rejectCommand {
+        case anyCommand => new CommandException(s"Order [${number.value}] is already payed ")
+      }
+    // format: on
 }
 
 case class CancelledOrder(number: OrderNumber) extends Order {
   /** end-of-life, must reject all commands */
-  def rejectAllCommands = Actions.empty[Order]
+  def rejectAllCommands = 
+    // format: off
+    actions[Order]
+        .rejectCommand {
+          case anyCommand => new CommandException(s"Order [${number.value}] was cancelled ")
+        }
+    // format: on
 }
 
 object Order {
