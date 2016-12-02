@@ -23,7 +23,7 @@ We will also see how to deal with remote services inside the aggregate's behavio
 Check out this project
 
 ```
-git clone git@github.com:strongtyped/fun-cqrs-scalaio.git
+git clone git@github.com:strongtyped/fun-cqrs-order-demo.git
 cd fun-cqrs-scalaio
 
 # start sbt and call `groll initial` to bring the repo to it's initial state
@@ -78,12 +78,12 @@ case class OrderWasPayed(number: OrderNumber, accountNumber: AccountNumber) exte
 
 ### Interacting with the webapp
 
-There is no GUI, only REST interface. Any REST client will do the trick. The call a extremely simple. 
+There is no GUI, only REST interface. Any REST client will do the trick. The calls are extremely simple. 
 
 If your OS offers a shell environment, we recommend to install [HTTPie](https://httpie.org/) and use the provided `api.sh`
 
 ```bash
-cd fun-cqrs-scalaio
+cd fun-cqrs-order-demo
 . api.sh
 # to see all available calls
 order.<tab> 
